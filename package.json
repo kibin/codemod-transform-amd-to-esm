@@ -1,5 +1,5 @@
 {
-  "name": "babel-plugin-amd-to-esm",
+  "name": "babel-plugin-transform-amd-to-esm",
   "version": "0.0.1",
   "description": "",
   "module": "./src/index.mjs",
