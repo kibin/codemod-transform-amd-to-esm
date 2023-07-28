@@ -1,0 +1,1 @@
+# babel-plugin-amd-to-esm
