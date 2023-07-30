@@ -503,71 +503,93 @@ export default ({ types: t }) => {
         }
     }
 
-    const constructImportDeclaration = (name, path) => {
-        return t.importDeclaration([t.importDefaultSpecifier(t.identifier(name))], t.stringLiteral(path))
+    const constructImportDeclaration = (path, name) => {
+        const specifiers = name != null ? [t.importDefaultSpecifier(t.identifier(name))] : []
+
+        return t.importDeclaration(specifiers, t.stringLiteral(path))
     }
 
-    const getCallExpressionNameAndArguments = (left, right) => {
+    const getVariableCallExpressionNameAndArguments = (left, right) => {
         return [left.name, right.callee.name, right.arguments]
     }
 
-    const replaceRequireDeclarationToImport = (node) => {
+    const reconstructMemberExpression = (name, chain) => {
+        const mappedChain = chain.map(node => {
+            if (t.isMemberExpression(node)) {
+                return node.property.name
+            }
+
+            if (t.isCallExpression(node)) {
+                return `${node.callee.property?.name || node.callee.name}(${node.arguments.map(node => {
+                    switch (true) {
+                        case t.isStringLiteral(node): return node.extra.raw
+                        case t.isIdentifier(node): return node.name
+                        default: return generate(node).code
+                    }
+                })})`
+            }
+
+            // do nothing?
+            return node
+        })
+
+        return template([name, ...mappedChain].join('.'))()
+    }
+
+    const replaceRequireDeclarationWithImport = (node) => {
         if (node.declarations.length === 1) {
             const declaration = node.declarations[0]
 
-            switch(true) {
-                case t.isCallExpression(declaration.init): {
-                    const [varName, calleeName, args] = getCallExpressionNameAndArguments(declaration.id, declaration.init)
+            if (t.isCallExpression(declaration.init)) {
+                const [varName, calleeName, args] = getVariableCallExpressionNameAndArguments(declaration.id, declaration.init)
 
-                    if (calleeName === REQUIRE && args.length === 1) {
-                        return constructImportDeclaration(varName, args[0].value)
-                    }
-
-                    // do nothing
-                    return node
+                if (calleeName === REQUIRE) {
+                    return constructImportDeclaration(args[0].value, varName)
                 }
-                case t.isMemberExpression(declaration.init): {
-                    const [node, chain] = getChainWithExpressionNode(declaration.init)
-                    const [varName, calleeName, args] = getCallExpressionNameAndArguments(declaration.id, node)
+            }
 
-                    const mappedChain = chain.map(node => {
-                        if (t.isMemberExpression(node)) {
-                            return node.property.name
-                        }
+            if (t.isMemberExpression(declaration.init)) {
+                const [node, chain] = getChainWithExpressionNode(declaration.init)
+                const [varName, calleeName, args] = getVariableCallExpressionNameAndArguments(declaration.id, node)
 
-                        if (t.isCallExpression(node)) {
-                            return `${node.callee.property?.name || node.callee.name}(${node.arguments.map(node => {
-                                if (t.isStringLiteral(node)) {
-                                    return node.extra.raw
-                                } else if (t.isIdentifier(node)) {
-                                    return node.name
-                                } else {
-                                    return generate(node).code
-                                }
-                            })})`
-                        }
-
-                        return node
-                    })
-
-                    if (calleeName === REQUIRE && args.length === 1) {
-                        return [
-                            constructImportDeclaration('_' + varName, args[0].value),
-                            t.variableDeclaration('const', [
-                                t.variableDeclarator(
-                                    t.identifier(varName),
-                                    template(['_' + varName, ...mappedChain].join('.'))().expression,
-                                ),
-                            ])
-                        ]
-                    }
-
-                    // do nothing
-                    return node
+                if (calleeName === REQUIRE) {
+                    return [
+                        constructImportDeclaration(args[0].value, '_' + varName),
+                        t.variableDeclaration('const', [
+                            t.variableDeclarator(
+                                t.identifier(varName),
+                                reconstructMemberExpression('_' + varName, chain).expression,
+                            ),
+                        ])
+                    ]
                 }
-                default:
-                    // do nothing
-                    return node
+            }
+        }
+
+        // do nothing
+        return node
+    }
+
+    const replaceRequireStatementWithImport = (node) => {
+        const { expression } = node
+
+        if (t.isCallExpression(expression)) {
+            if (t.isIdentifier(expression.callee)) {
+                return constructImportDeclaration(expression.arguments[0].value)
+            }
+
+            if (t.isMemberExpression(expression.callee)) {
+                const [node, chain] = getChainWithExpressionNode(expression)
+
+                if (node.callee.name === REQUIRE) {
+                    const path = node.arguments[0].value
+                    const name = '__' + path.split('/').pop()
+
+                    return [
+                        constructImportDeclaration(path, name),
+                        reconstructMemberExpression(name, chain),
+                    ]
+                }
             }
         }
 
@@ -591,6 +613,7 @@ export default ({ types: t }) => {
         isExplicitDependencyInjection,
         hasIgnoreComment,
         createFactoryInvocationWithUnknownArgTypes,
-        replaceRequireDeclarationToImport,
+        replaceRequireDeclarationWithImport,
+        replaceRequireStatementWithImport,
     }
 }

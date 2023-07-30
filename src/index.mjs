@@ -16,7 +16,8 @@ export default ({ types: t }) => {
         isSimplifiedCommonJSWrapper,
         createDependencyInjectionExpression,
         createRestDependencyInjectionExpression,
-        replaceRequireDeclarationToImport,
+        replaceRequireDeclarationWithImport,
+        replaceRequireStatementWithImport,
         createModuleExportsResultCheck,
         getUniqueIdentifier,
         isFunctionExpression,
@@ -47,13 +48,12 @@ export default ({ types: t }) => {
         const body = path.get('body')
         const lastImportIndex = body.findLastIndex(p => p.isImportDeclaration())
         const lastImport = body[lastImportIndex]
-        const varDecPaths = body.slice(0, lastImportIndex).filter(p => p.isVariableDeclaration()).reverse()
-        const varDecs = [...varDecPaths.map(varDecPath => varDecPath.node)]
+        const nonImportPaths = body.slice(0, lastImportIndex).filter(p => !p.isImportDeclaration()).reverse()
+        const declarations = [...nonImportPaths.map(nonImportPath => nonImportPath.node)]
 
-        if (lastImport && varDecPaths.length) {
-            varDecPaths.forEach(path => path.remove())
-
-            varDecs.forEach(dec => lastImport.insertAfter(dec))
+        if (lastImport && nonImportPaths.length) {
+            nonImportPaths.forEach(path => path.remove())
+            declarations.forEach(dec => lastImport.insertAfter(dec))
         }
     }
 
@@ -179,7 +179,9 @@ export default ({ types: t }) => {
                             case t.isReturnStatement(node):
                                 return t.exportDefaultDeclaration(node.argument)
                             case t.isVariableDeclaration(node):
-                                return replaceRequireDeclarationToImport(node)
+                                return replaceRequireDeclarationWithImport(node)
+                            case t.isExpressionStatement(node):
+                                return replaceRequireStatementWithImport(node)
                             default:
                                 return node
                         }
