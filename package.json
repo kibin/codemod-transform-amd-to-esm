@@ -3,6 +3,8 @@
   "version": "0.0.2",
   "description": "",
   "module": "./src/index.mjs",
+  "main": "./src/index.mjs",
+  "type": "module",
   "scripts": {
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --config=jest.config.js",
     "tdd": "NODE_OPTIONS=--experimental-vm-modules jest --config=jest.config.js --watch"
