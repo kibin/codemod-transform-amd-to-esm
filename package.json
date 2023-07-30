@@ -9,7 +9,8 @@
     "tdd": "NODE_OPTIONS=--experimental-vm-modules jest --config=jest.config.js --watch",
     "clean": "rm -rf build",
     "build": "esbuild src/index.js --bundle --outfile=build/index.js --minify",
-    "prepare": "npm run test && npm run clean && npm run build"
+    "prepare": "npm run test && npm run clean && npm run build",
+    "prepack": "npm run build"
   },
   "author": "Alisa Kibin",
   "license": "ISC",
