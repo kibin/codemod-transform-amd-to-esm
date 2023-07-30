@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-transform-amd-to-esm",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "",
   "module": "./src/index.mjs",
   "main": "./src/index.mjs",
