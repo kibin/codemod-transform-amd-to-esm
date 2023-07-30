@@ -1,9 +1,9 @@
-module.exports = {
-    testRegex: "/__tests__/.*?\\.spec\\.mjs$",
-    transform: {
-      "^.+\\.jsx?$": "babel-jest",
-      "^.+\\.mjs$": "babel-jest",
-    },
-    testPathIgnorePatterns: ["<rootDir>/build/", "<rootDir>/node_modules/"],
-    moduleFileExtensions: ["js", "jsx", "mjs"]
-  }
+export default {
+  testRegex: '/__tests__/.*?\\.spec\\.m?js$',
+  transform: {
+    '^.+\\.jsx?$': 'babel-jest',
+    '^.+\\.m?js$': 'babel-jest',
+  },
+  testPathIgnorePatterns: ['<rootDir>/build/', '<rootDir>/node_modules/'],
+  moduleFileExtensions: ['js', 'jsx', 'mjs']
+}

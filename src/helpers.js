@@ -10,7 +10,7 @@ import {
     AMD_DEPS,
     AMD_DEFINE_RESULT,
     AMD_FACTORY_RESULT,
-} from './constants.mjs'
+} from './constants'
 
 const generate = _gen.default
 const template = _tem.default
@@ -504,14 +504,20 @@ export default ({ types: t }) => {
         }
     }
 
-    const constructImportDeclaration = (path, name) => {
-        const specifiers = name != null ? [t.importDefaultSpecifier(t.identifier(name))] : []
+    const constructImportDeclaration = (path, specifier) => {
+        let specifiers = []
+
+        if (specifier) {
+            if (t.isIdentifier(specifier)) {
+                specifiers = [t.importDefaultSpecifier(specifier)]
+            }
+
+            if (t.isObjectPattern(specifier)) {
+                specifiers = specifier.properties.map(prop => t.importSpecifier(prop.key, prop.value))
+            }
+        }
 
         return t.importDeclaration(specifiers, t.stringLiteral(path))
-    }
-
-    const getVariableCallExpressionNameAndArguments = (left, right) => {
-        return [left.name, right.callee.name, right.arguments]
     }
 
     const reconstructMemberExpression = (name, chain) => {
@@ -542,24 +548,32 @@ export default ({ types: t }) => {
             const declaration = node.declarations[0]
 
             if (t.isCallExpression(declaration.init)) {
-                const [varName, calleeName, args] = getVariableCallExpressionNameAndArguments(declaration.id, declaration.init)
+                if (t.isIdentifier(declaration.id)) {
+                    const [calleeName, args] = [declaration.init.callee.name, declaration.init.arguments]
 
-                if (calleeName === REQUIRE) {
-                    return constructImportDeclaration(args[0].value, varName)
+                    if (calleeName === REQUIRE) {
+                        return constructImportDeclaration(args[0].value, declaration.id)
+                    }
+                }
+
+                if (t.isObjectPattern(declaration.id)) {
+                    if (declaration.init.callee.name === REQUIRE) {
+                        return constructImportDeclaration(declaration.init.arguments[0].value, declaration.id)
+                    }
                 }
             }
 
             if (t.isMemberExpression(declaration.init)) {
                 const [node, chain] = getChainWithExpressionNode(declaration.init)
-                const [varName, calleeName, args] = getVariableCallExpressionNameAndArguments(declaration.id, node)
+                const [calleeName, args] = [node.callee.name, node.arguments]
 
                 if (calleeName === REQUIRE) {
                     return [
-                        constructImportDeclaration(args[0].value, '_' + varName),
+                        constructImportDeclaration(args[0].value, t.identifier('_' + declaration.id.name)),
                         t.variableDeclaration('const', [
                             t.variableDeclarator(
-                                t.identifier(varName),
-                                reconstructMemberExpression('_' + varName, chain).expression,
+                                declaration.id,
+                                reconstructMemberExpression('_' + declaration.id.name, chain).expression,
                             ),
                         ])
                     ]
@@ -587,7 +601,7 @@ export default ({ types: t }) => {
                     const name = '__' + path.split('/').pop()
 
                     return [
-                        constructImportDeclaration(path, name),
+                        constructImportDeclaration(path, t.identifier(name)),
                         reconstructMemberExpression(name, chain),
                     ]
                 }
