@@ -546,6 +546,8 @@ export default ({ types: t }) => {
 
     const createVariableFromPath = (path) => path
         .split('/')
+        .map(word => word.replace(/\W/g, ''))
+        .filter(Boolean)
         .map((chunk, index) => index ? chunk[0].toUpperCase() + chunk.slice(1) : chunk)
         .join('')
 
@@ -573,7 +575,7 @@ export default ({ types: t }) => {
                 const [node, chain] = getChainWithExpressionNode(declaration.init)
                 const [calleeName, args] = [node.callee.name, node.arguments]
                 const path = args[0].value
-                const name = PREFIX + (t.isObjectPattern(declaration.id) ? createVariableFromPath(path) : declaration.id.name)
+                const name = PREFIX + createVariableFromPath(path)
 
                 if (calleeName === REQUIRE) {
                     return [
