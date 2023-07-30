@@ -10,6 +10,7 @@ import {
     AMD_DEPS,
     AMD_DEFINE_RESULT,
     AMD_FACTORY_RESULT,
+    PREFIX,
 } from './constants'
 
 const generate = _gen.default
@@ -543,6 +544,11 @@ export default ({ types: t }) => {
         return template([name, ...mappedChain].join('.'))()
     }
 
+    const createVariableFromPath = (path) => path
+        .split('/')
+        .map((chunk, index) => index ? chunk[0].toUpperCase() + chunk.slice(1) : chunk)
+        .join('')
+
     const replaceRequireDeclarationWithImport = (node) => {
         if (node.declarations.length === 1) {
             const declaration = node.declarations[0]
@@ -566,14 +572,16 @@ export default ({ types: t }) => {
             if (t.isMemberExpression(declaration.init)) {
                 const [node, chain] = getChainWithExpressionNode(declaration.init)
                 const [calleeName, args] = [node.callee.name, node.arguments]
+                const path = args[0].value
+                const name = PREFIX + (t.isObjectPattern(declaration.id) ? createVariableFromPath(path) : declaration.id.name)
 
                 if (calleeName === REQUIRE) {
                     return [
-                        constructImportDeclaration(args[0].value, t.identifier('_' + declaration.id.name)),
+                        constructImportDeclaration(path, t.identifier(name)),
                         t.variableDeclaration('const', [
                             t.variableDeclarator(
                                 declaration.id,
-                                reconstructMemberExpression('_' + declaration.id.name, chain).expression,
+                                reconstructMemberExpression(name, chain).expression,
                             ),
                         ])
                     ]
@@ -598,7 +606,7 @@ export default ({ types: t }) => {
 
                 if (node.callee.name === REQUIRE) {
                     const path = node.arguments[0].value
-                    const name = '__' + path.split('/').pop()
+                    const name = PREFIX + createVariableFromPath(path)
 
                     return [
                         constructImportDeclaration(path, t.identifier(name)),

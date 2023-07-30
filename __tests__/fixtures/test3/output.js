@@ -1,11 +1,11 @@
 import normal from "./normal";
-import _ChainedItem from "./item";
-import _chained from "./dataModels/adl";
-import _parser from "./parser";
+import __ChainedItem from "./item";
+import __chained from "./dataModels/adl";
+import __parser from "./parser";
 import normal2 from "./normal/normal";
-const ChainedItem = _ChainedItem.item;
-const chained = _chained.getSomething().something.another;
-const parser = _parser
+const ChainedItem = __ChainedItem.item;
+const chained = __chained.getSomething().something.another;
+const parser = __parser
   .init()
   .filter((arg) => arg === 1)
   .lol.wut("hello", normal).omg.nothing.changed;
