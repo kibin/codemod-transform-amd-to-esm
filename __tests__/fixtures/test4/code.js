@@ -1,5 +1,6 @@
 define(function (require) {
     var parser = require('./parser');
+    const questionL = parser.getBundle().assessments.question;
     var SCO = require('./sco');
 
     require('common/appEvents').attachEvents();

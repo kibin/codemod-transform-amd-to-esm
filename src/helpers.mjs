@@ -503,6 +503,8 @@ export default ({ types: t }) => {
                 return [node, chain]
             }
         }
+
+        return []
     }
 
     const constructImportDeclaration = (path, specifier) => {
@@ -572,12 +574,12 @@ export default ({ types: t }) => {
             }
 
             if (t.isMemberExpression(declaration.init)) {
-                const [node, chain] = getChainWithExpressionNode(declaration.init)
-                const [calleeName, args] = [node.callee.name, node.arguments]
-                const path = args[0].value
-                const name = PREFIX + createVariableFromPath(path)
+                const [firstNode, chain] = getChainWithExpressionNode(declaration.init)
 
-                if (calleeName === REQUIRE) {
+                if (firstNode?.callee.name === REQUIRE) {
+                    const path = firstNode.arguments[0].value
+                    const name = PREFIX + createVariableFromPath(path)
+
                     return [
                         constructImportDeclaration(path, t.identifier(name)),
                         t.variableDeclaration('const', [
@@ -606,7 +608,7 @@ export default ({ types: t }) => {
             if (t.isMemberExpression(expression.callee)) {
                 const [node, chain] = getChainWithExpressionNode(expression)
 
-                if (node.callee.name === REQUIRE) {
+                if (node?.callee.name === REQUIRE) {
                     const path = node.arguments[0].value
                     const name = PREFIX + createVariableFromPath(path)
 

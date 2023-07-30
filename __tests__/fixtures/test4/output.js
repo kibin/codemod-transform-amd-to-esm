@@ -5,6 +5,7 @@ import "select2";
 import "ui/jquery.plugins/spinner";
 import "ui/jquery.plugins/mousewheel";
 import "jquery-ui/ui/widgets/autocomplete";
+const questionL = parser.getBundle().assessments.question;
 __commonAppEvents.attachEvents();
 
 class Scorm extends EventEmitter {
