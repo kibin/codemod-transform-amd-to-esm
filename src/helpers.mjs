@@ -11,7 +11,7 @@ import {
     AMD_DEFINE_RESULT,
     AMD_FACTORY_RESULT,
     PREFIX,
-} from './constants'
+} from './constants.mjs'
 
 const generate = _gen.default
 const template = _tem.default
