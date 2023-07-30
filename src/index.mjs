@@ -5,8 +5,8 @@ import {
     DEFINE,
     AMD_DEFINE_RESULT,
     MAYBE_FUNCTION,
-} from './constants'
-import createHelpers from './helpers'
+} from './constants.mjs'
+import createHelpers from './helpers.mjs'
 
 export default ({ types: t }) => {
     const {

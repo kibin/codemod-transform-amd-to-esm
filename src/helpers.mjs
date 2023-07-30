@@ -1,5 +1,6 @@
 import _gen from '@babel/generator'
 import _tem from '@babel/template'
+
 import {
     MODULE,
     EXPORTS,
@@ -9,7 +10,7 @@ import {
     AMD_DEPS,
     AMD_DEFINE_RESULT,
     AMD_FACTORY_RESULT,
-} from './constants'
+} from './constants.mjs'
 
 const generate = _gen.default
 const template = _tem.default
