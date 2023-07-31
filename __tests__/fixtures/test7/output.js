@@ -14,8 +14,8 @@ import entities from "stores/course/statistics/users/entities";
 import { moderationStoreInstance } from "stores/classwork/moderation/store";
 import { dispatcherRegister } from "stores/course/statistics/users/store";
 import storeDecorator from "flux/storeDecorator";
-import __i18n from "i18n";
-const L = __i18n.getBundle().peerAssessment;
+import __L from "i18n";
+const L = __L.getBundle().peerAssessment;
 
 dispatcherRegister(moderationStoreInstance);
 export default storeDecorator(ClassworkPage, [moderationStoreInstance]);

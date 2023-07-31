@@ -543,7 +543,7 @@ export default ({ types: t }) => {
             return node
         })
 
-        return template([name, ...mappedChain].join('.'))()
+        return template`${[name, ...mappedChain].join('.')}`()
     }
 
     const createVariableFromPath = (path) => path
@@ -578,7 +578,7 @@ export default ({ types: t }) => {
 
                 if (firstNode?.callee.name === REQUIRE) {
                     const path = firstNode.arguments[0].value
-                    const name = PREFIX + createVariableFromPath(path)
+                    const name = PREFIX + (t.isObjectPattern(declaration.id) ? createVariableFromPath(path) : declaration.id.name)
 
                     return [
                         constructImportDeclaration(path, t.identifier(name)),
