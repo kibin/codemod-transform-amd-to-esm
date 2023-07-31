@@ -1,0 +1,21 @@
+import React from "react";
+import Loading from "ui/react/loading";
+import Layout from "ui/react/layout/layout";
+import Header from "ui/react/layout/header";
+import Content from "ui/react/layout/content";
+import ClassworkAttemptsList from "./classworkAttemptsList";
+import ClassworkAssessmentModal from "./classworkAssessmentModal";
+import ClassworkTask from "./classworkTask";
+import ModalWithArrow from "ui/react/modal/modalWithArrow";
+import StatisticsUsersHelpers from "common/helpers/statisticsUsersHelpers";
+import Actions from "stores/course/statistics/users/action";
+import ActionsModeration from "stores/classwork/moderation/actions";
+import entities from "stores/course/statistics/users/entities";
+import { moderationStoreInstance } from "stores/classwork/moderation/store";
+import { dispatcherRegister } from "stores/course/statistics/users/store";
+import storeDecorator from "flux/storeDecorator";
+import __i18n from "i18n";
+const L = __i18n.getBundle().peerAssessment;
+
+dispatcherRegister(moderationStoreInstance);
+export default storeDecorator(ClassworkPage, [moderationStoreInstance]);

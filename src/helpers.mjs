@@ -601,7 +601,7 @@ export default ({ types: t }) => {
         const { expression } = node
 
         if (t.isCallExpression(expression)) {
-            if (t.isIdentifier(expression.callee)) {
+            if (t.isIdentifier(expression.callee) && expression.callee.name === REQUIRE) {
                 return constructImportDeclaration(expression.arguments[0].value)
             }
 
