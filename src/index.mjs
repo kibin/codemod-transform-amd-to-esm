@@ -174,18 +174,26 @@ export default ({ types: t }) => {
 
             if (isDefineCall) {
                 if (!isModuleOrExportsInjected(dependencyList, factoryArity)) {
-                    path.replaceWithMultiple(factory.body.body.flatMap(node => {
-                        switch (true) {
-                            case t.isReturnStatement(node):
-                                return t.exportDefaultDeclaration(node.argument)
-                            case t.isVariableDeclaration(node):
-                                return replaceRequireDeclarationWithImport(node)
-                            case t.isExpressionStatement(node):
-                                return replaceRequireStatementWithImport(node)
-                            default:
-                                return node
-                        }
-                    }))
+                    const funcBody = factory.body
+
+                    if (t.isObjectExpression(funcBody)) {
+                        path.replaceWith(t.exportDefaultDeclaration(funcBody))
+                    }
+
+                    if (t.isBlockStatement(funcBody)) {
+                        path.replaceWithMultiple(funcBody.body.flatMap(node => {
+                            switch (true) {
+                                case t.isReturnStatement(node):
+                                    return t.exportDefaultDeclaration(node.argument)
+                                case t.isVariableDeclaration(node):
+                                    return replaceRequireDeclarationWithImport(node)
+                                case t.isExpressionStatement(node):
+                                    return replaceRequireStatementWithImport(node)
+                                default:
+                                    return node
+                            }
+                        }))
+                    }
                 } else {
                     const resultCheckIdentifier = getUniqueIdentifier(path.scope, AMD_DEFINE_RESULT)
                     path.replaceWithMultiple(

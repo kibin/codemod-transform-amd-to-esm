@@ -1,4 +1,4 @@
-define(function (require) {
+define((require) => {
     var parser = require('./parser');
     const questionL = parser.getBundle().assessments.question;
     var SCO = require('./sco');
