@@ -11,10 +11,12 @@ import StatisticsUsersHelpers from "common/helpers/statisticsUsersHelpers";
 import Actions from "stores/course/statistics/users/action";
 import ActionsModeration from "stores/classwork/moderation/actions";
 import entities from "stores/course/statistics/users/entities";
-import { moderationStoreInstance } from "stores/classwork/moderation/store";
-import { dispatcherRegister } from "stores/course/statistics/users/store";
+import __storesClassworkModerationStore from "stores/classwork/moderation/store";
+import __storesCourseStatisticsUsersStore from "stores/course/statistics/users/store";
 import storeDecorator from "flux/storeDecorator";
 import __L from "i18n";
+const { moderationStoreInstance } = __storesClassworkModerationStore;
+const { dispatcherRegister } = __storesCourseStatisticsUsersStore;
 const L = __L.getBundle().peerAssessment;
 
 dispatcherRegister(moderationStoreInstance);

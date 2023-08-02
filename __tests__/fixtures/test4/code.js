@@ -8,6 +8,7 @@ define((require) => {
     require('ui/jquery.plugins/spinner');
     require('ui/jquery.plugins/mousewheel');
     require('jquery-ui/ui/widgets/autocomplete');
+    require.resolve('selecting');
 
     class Scorm extends EventEmitter {
         constructor({ url }) {

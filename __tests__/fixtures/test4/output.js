@@ -8,6 +8,8 @@ import "jquery-ui/ui/widgets/autocomplete";
 const questionL = parser.getBundle().assessments.question;
 __commonAppEvents.attachEvents();
 
+require.resolve("selecting");
+
 class Scorm extends EventEmitter {
   constructor({ url }) {
     super();

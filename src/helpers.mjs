@@ -4,6 +4,7 @@ import {
     MODULE,
     EXPORTS,
     REQUIRE,
+    DEFAULT,
     TRANSFORM_AMD_TO_COMMONJS_IGNORE,
     MAYBE_FUNCTION,
     AMD_DEPS,
@@ -13,6 +14,18 @@ import {
 } from './constants.mjs'
 
 const generate = _gen.default
+
+const capitalizeSubsequent = (chunk, index) => index ? chunk[0].toUpperCase() + chunk.slice(1) : chunk
+
+const createVariableFromPath = (path) => path
+    .split('/')
+    .map(word => word.split(/\W/g).filter(Boolean).map(capitalizeSubsequent).join(''))
+    .filter(Boolean)
+    .map(capitalizeSubsequent)
+    .join('')
+
+const isExternalPath = (path) =>
+    path.replaceAll('/', '').replaceAll('.', '') === path
 
 // A factory function is exported in order to inject the same babel-types object
 // being used by the plugin itself
@@ -514,7 +527,9 @@ export default ({ types: t, template }) => {
             }
 
             if (t.isObjectPattern(specifier)) {
-                specifiers = specifier.properties.map(prop => t.importSpecifier(prop.key, prop.value))
+                specifiers = specifier.properties
+                    .sort((propA, propB) => Number(propB.key.name === DEFAULT) - Number(propA.key.name === DEFAULT))
+                    .map(prop => prop.key.name === DEFAULT ? t.importDefaultSpecifier(prop.value) : t.importSpecifier(prop.value, prop.key))
             }
         }
 
@@ -544,52 +559,43 @@ export default ({ types: t, template }) => {
         return template`${[name, ...mappedChain].join('.')}`()
     }
 
-    const capitalizeSubsequent = (chunk, index) => index ? chunk[0].toUpperCase() + chunk.slice(1) : chunk
 
-    const createVariableFromPath = (path) => path
-        .split('/')
-        // .map(word => word.replace(/\W/g, ''))
-        .map(word => word.split(/\W/g).map(capitalizeSubsequent).join(''))
-        .filter(Boolean)
-        .map(capitalizeSubsequent)
-        .join('')
+    const createImportWithDestructuring = (left, right, chain = []) => {
+        const path = right.arguments[0].value
+        const name = PREFIX + (t.isObjectPattern(left) ? createVariableFromPath(path) : left.name)
+
+        return [
+            constructImportDeclaration(path, t.identifier(name)),
+            t.variableDeclaration('const', [
+                t.variableDeclarator(
+                    left,
+                    reconstructMemberExpression(name, chain).expression,
+                ),
+            ])
+        ]
+    }
 
     const replaceRequireDeclarationWithImport = (node) => {
         if (node.declarations.length === 1) {
             const declaration = node.declarations[0]
 
-            if (t.isCallExpression(declaration.init)) {
-                if (t.isIdentifier(declaration.id)) {
-                    const [calleeName, args] = [declaration.init.callee.name, declaration.init.arguments]
-
-                    if (calleeName === REQUIRE) {
-                        return constructImportDeclaration(args[0].value, declaration.id)
-                    }
+            if (t.isCallExpression(declaration.init) && t.isIdentifier(declaration.init.callee) && declaration.init.callee.name === REQUIRE) {
+                if (t.isObjectPattern(declaration.id) && !declaration.id.properties.some(prop => prop.key.name === DEFAULT) && !isExternalPath(declaration.init.arguments[0].value)) {
+                    return createImportWithDestructuring(declaration.id, declaration.init)
                 }
 
-                if (t.isObjectPattern(declaration.id)) {
-                    if (declaration.init.callee.name === REQUIRE) {
-                        return constructImportDeclaration(declaration.init.arguments[0].value, declaration.id)
-                    }
-                }
+                return constructImportDeclaration(declaration.init.arguments[0].value, declaration.id)
             }
 
-            if (t.isMemberExpression(declaration.init)) {
+            if (t.isCallExpression(declaration.init) || t.isMemberExpression(declaration.init)) {
                 const [firstNode, chain] = getChainWithExpressionNode(declaration.init)
 
                 if (firstNode?.callee.name === REQUIRE) {
-                    const path = firstNode.arguments[0].value
-                    const name = PREFIX + (t.isObjectPattern(declaration.id) ? createVariableFromPath(path) : declaration.id.name)
+                    if (chain.length === 1 && t.isMemberExpression(chain[0]) && chain[0].property.name === DEFAULT) {
+                        return constructImportDeclaration(firstNode.arguments[0].value, declaration.id)
+                    }
 
-                    return [
-                        constructImportDeclaration(path, t.identifier(name)),
-                        t.variableDeclaration('const', [
-                            t.variableDeclarator(
-                                declaration.id,
-                                reconstructMemberExpression(name, chain).expression,
-                            ),
-                        ])
-                    ]
+                    return createImportWithDestructuring(declaration.id, firstNode, chain)
                 }
             }
         }
