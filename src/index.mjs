@@ -8,7 +8,7 @@ import {
 } from './constants.mjs'
 import createHelpers from './helpers.mjs'
 
-export default ({ types: t }) => {
+export default ({ types: t, template }) => {
     const {
         decodeDefineArguments,
         decodeRequireArguments,
@@ -26,7 +26,7 @@ export default ({ types: t }) => {
         isExplicitDependencyInjection,
         hasIgnoreComment,
         createFactoryInvocationWithUnknownArgTypes,
-    } = createHelpers({ types: t })
+    } = createHelpers({ types: t, template })
 
     const argumentDecoders = {
         [DEFINE]: decodeDefineArguments,
@@ -43,7 +43,7 @@ export default ({ types: t }) => {
 
         if (hasIgnoreComment(node)) return
 
-        path.traverse({ ExpressionStatement }, ...rest)
+        path.traverse({ ExpressionStatement, VariableDeclaration }, ...rest)
 
         const body = path.get('body')
         const lastImportIndex = body.findLastIndex(p => p.isImportDeclaration())
@@ -57,6 +57,14 @@ export default ({ types: t }) => {
         }
     }
 
+    const VariableDeclaration = (path) => {
+        const { node, parent } = path
+
+        if (t.isProgram(parent)) {
+            path.replaceWithMultiple(replaceRequireDeclarationWithImport(node))
+        }
+    }
+
     const ExpressionStatement = (path, { opts }) => {
         const { node, parent } = path
 
@@ -66,6 +74,10 @@ export default ({ types: t }) => {
 
         const { name } = node.expression.callee
         const isDefineCall = name === DEFINE
+
+        if (!isDefineCall && t.isProgram(parent)) {
+            path.replaceWithMultiple(replaceRequireStatementWithImport(node))
+        }
 
         if (isDefineCall && options.restrictToTopLevelDefine && !t.isProgram(parent)) return
 

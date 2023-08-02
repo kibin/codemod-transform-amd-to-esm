@@ -2,11 +2,13 @@
   "name": "babel-plugin-transform-amd-to-esm",
   "version": "0.0.6",
   "description": "",
-  "main": "./src/index.mjs",
+  "main": "./build/index.cjs",
   "type": "module",
   "scripts": {
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --config=jest.config.js",
-    "tdd": "NODE_OPTIONS=--experimental-vm-modules jest --config=jest.config.js --watch"
+    "tdd": "NODE_OPTIONS=--experimental-vm-modules jest --config=jest.config.js --watch",
+    "clean": "rm -rf ./build",
+    "build": "./node_modules/.bin/esbuild src/index.mjs --bundle --format=cjs --minify --outfile=build/index.cjs"
   },
   "author": "Alisa Kibin",
   "license": "ISC",
@@ -14,8 +16,8 @@
     "@babel/core": "^7.22.9",
     "@babel/generator": "^7.22.9",
     "@babel/preset-env": "^7.22.9",
-    "@babel/template": "^7.22.5",
     "babel-plugin-tester": "^11.0.4",
+    "esbuild": "0.18.17",
     "jest": "^29.6.1"
   }
 }

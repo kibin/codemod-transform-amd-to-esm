@@ -1,5 +1,18 @@
 {
+    "retainLines": true,
     "presets": [
-        ["@babel/preset-env"]
+        [
+            "@babel/preset-env",
+            {
+                "modules": false,
+                "loose": true,
+                "targets": "last 2 Chrome versions"
+            }
+        ]
+    ],
+    "plugins": [
+        [
+            "@babel/plugin-syntax-jsx"
+        ]
     ]
 }

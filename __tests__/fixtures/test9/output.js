@@ -1,0 +1,10 @@
+import more from "./more";
+import required from "./required";
+import __content from "./content";
+import "some-side-effects";
+import __sideEffectsFactory from "side-effects-factory";
+import EventEmitter from "common/eventEmitter";
+import BackendStore from "./stores/backend";
+const content = __content.one.two("hello").three;
+__sideEffectsFactory.init();
+export default [EventEmitter, BackendStore, more, required, content];

@@ -1,5 +1,4 @@
 import _gen from '@babel/generator'
-import _tem from '@babel/template'
 
 import {
     MODULE,
@@ -14,11 +13,10 @@ import {
 } from './constants.mjs'
 
 const generate = _gen.default
-const template = _tem.default
 
 // A factory function is exported in order to inject the same babel-types object
 // being used by the plugin itself
-export default ({ types: t }) => {
+export default ({ types: t, template }) => {
     const decodeDefineArguments = (argNodes) => {
         if (argNodes.length === 1) {
             return { factory: argNodes[0] }
@@ -546,11 +544,14 @@ export default ({ types: t }) => {
         return template`${[name, ...mappedChain].join('.')}`()
     }
 
+    const capitalizeSubsequent = (chunk, index) => index ? chunk[0].toUpperCase() + chunk.slice(1) : chunk
+
     const createVariableFromPath = (path) => path
         .split('/')
-        .map(word => word.replace(/\W/g, ''))
+        // .map(word => word.replace(/\W/g, ''))
+        .map(word => word.split(/\W/g).map(capitalizeSubsequent).join(''))
         .filter(Boolean)
-        .map((chunk, index) => index ? chunk[0].toUpperCase() + chunk.slice(1) : chunk)
+        .map(capitalizeSubsequent)
         .join('')
 
     const replaceRequireDeclarationWithImport = (node) => {
