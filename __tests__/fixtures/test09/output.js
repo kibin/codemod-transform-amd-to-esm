@@ -1,11 +1,13 @@
 import more from "./more";
 import required from "./required";
 import __content from "./content";
+import __L from "i18n";
 import "some-side-effects";
 import __sideEffectsFactory from "side-effects-factory";
 import EventEmitter from "common/eventEmitter";
 import BackendStore from "./stores/backend";
 import ReactSlider from "react-slick";
 const content = __content.one.two("hello").three;
+const L = __L.getBundle()["40x"];
 __sideEffectsFactory.init();
 export default [EventEmitter, BackendStore, more, required, content];
