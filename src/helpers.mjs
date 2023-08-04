@@ -641,6 +641,34 @@ export default ({ types: t, template }) => {
         return node
     }
 
+    const createNamedExport = (identifier, declaration) => {
+        return t.exportNamedDeclaration(t.variableDeclaration('const', [t.variableDeclarator(identifier, declaration)]), [])
+    }
+
+    const replaceCommonExportsWithESM = (path) => {
+        const { node } = path
+        const { expression } = node
+        const { left, right } = expression
+
+        if (t.isMemberExpression(left)) {
+            if (t.isMemberExpression(left.object) && left.object.object.name === MODULE && left.object.property.name === EXPORTS) {
+                return path.replaceWith(createNamedExport(left.property, right))
+            }
+
+            if (t.isIdentifier(left.object)) {
+                // module.exports = <right>;
+                if (left.object.name === MODULE && left.property.name === EXPORTS) {
+                    return path.replaceWith(t.exportDefaultDeclaration(right))
+                }
+
+                // exports.<variable> = <right>;
+                if (left.object.name === EXPORTS) {
+                    return path.replaceWith(createNamedExport(left.property, right))
+                }
+            }
+        }
+    }
+
     return {
         decodeDefineArguments,
         decodeRequireArguments,
@@ -659,5 +687,6 @@ export default ({ types: t, template }) => {
         createFactoryInvocationWithUnknownArgTypes,
         replaceRequireDeclarationWithImport,
         replaceRequireStatementWithImport,
+        replaceCommonExportsWithESM,
     }
 }

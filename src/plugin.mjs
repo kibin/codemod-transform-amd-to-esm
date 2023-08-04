@@ -18,6 +18,7 @@ export default ({ types: t, template }) => {
         createRestDependencyInjectionExpression,
         replaceRequireDeclarationWithImport,
         replaceRequireStatementWithImport,
+        replaceCommonExportsWithESM,
         createModuleExportsResultCheck,
         getUniqueIdentifier,
         isFunctionExpression,
@@ -67,12 +68,17 @@ export default ({ types: t, template }) => {
 
     const ExpressionStatement = (path, { opts }) => {
         const { node, parent } = path
+        const { expression } = node
 
-        if (!t.isCallExpression(node.expression)) return
+        if (t.isProgram(parent) && t.isAssignmentExpression(expression)) {
+            replaceCommonExportsWithESM(path)
+        }
+
+        if (!t.isCallExpression(expression)) return
 
         const options = Object.assign({ restrictToTopLevelDefine: true }, opts)
 
-        const { name } = node.expression.callee
+        const { name } = expression.callee
         const isDefineCall = name === DEFINE
 
         if (!isDefineCall && t.isProgram(parent)) {
@@ -85,7 +91,7 @@ export default ({ types: t, template }) => {
 
         if (!argumentDecoder) return
 
-        const { dependencyList, factory } = argumentDecoder(node.expression.arguments)
+        const { dependencyList, factory } = argumentDecoder(expression.arguments)
         const isDependencyArray = dependencyList && t.isArrayExpression(dependencyList)
 
         if (!isDependencyArray && !factory) return
@@ -126,7 +132,7 @@ export default ({ types: t, template }) => {
                     dependencyList,
                     factory,
                     isDefineCall,
-                    arity: node.expression.arguments.length,
+                    arity: expression.arguments.length,
                 })
             )
             return
