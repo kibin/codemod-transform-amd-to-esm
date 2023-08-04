@@ -539,7 +539,13 @@ export default ({ types: t, template }) => {
     const reconstructMemberExpression = (name, chain) => {
         const mappedChain = chain.map(node => {
             if (t.isMemberExpression(node)) {
-                return node.property.name
+                if (node.property.name) {
+                    return node.property.name
+                }
+
+                if (node.property.value) {
+                    return `['${node.property.value}']`
+                }
             }
 
             if (t.isCallExpression(node)) {
@@ -556,7 +562,11 @@ export default ({ types: t, template }) => {
             return node
         })
 
-        return template`${[name, ...mappedChain].join('.')}`()
+        const chainExpression = [name, ...mappedChain].reduce((result, string) =>
+            result + (string.slice(0, 1) === '[' && string.slice(-1) === ']' ? '' : '.') + string
+        )
+
+        return template`${chainExpression}`()
     }
 
 
