@@ -12,5 +12,9 @@ pluginTester({
   fixtures: path.join(__dirname, 'fixtures'),
   babelOptions: {
     retainLines: true,
-  }
+    parserOpts: {
+      tokens: true,
+      createParenthesizedExpressions: true,
+    },
+  },
 })

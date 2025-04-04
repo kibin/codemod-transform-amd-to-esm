@@ -3,7 +3,7 @@ import React from 'react';
 import IconContainer from './IconContainer';
 
 exports.colors = {
-    white: '#fff',
+  white: '#fff',
 };
 
 module.exports.container = IconContainer;
@@ -18,7 +18,7 @@ module.exports = class Arrow extends React.Component {
     color: PropTypes.string,
   };
 
-  render () {
+  render() {
     return this.props;
   }
 };
