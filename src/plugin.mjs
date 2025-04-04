@@ -194,6 +194,7 @@ export default ({ types: t, template }) => {
 
           if (
             t.isObjectExpression(funcBody)
+            || t.isArrayExpression(funcBody)
             || t.isParenthesizedExpression(funcBody)
             || t.isFunctionExpression(funcBody)
           ) {
