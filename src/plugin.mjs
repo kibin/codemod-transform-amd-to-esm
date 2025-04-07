@@ -202,7 +202,7 @@ export default ({ types: t, template }) => {
           }
 
           if (t.isBlockStatement(funcBody)) {
-            path.replaceWithMultiple(funcBody.body.flatMap(node => {
+            path.replaceWithMultiple(dependencyInjections.concat(funcBody.body).flatMap(node => {
               switch (true) {
                 case t.isReturnStatement(node):
                   return t.exportDefaultDeclaration(node.argument)
