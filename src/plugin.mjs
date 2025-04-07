@@ -18,6 +18,7 @@ export default ({ types: t, template }) => {
     createRestDependencyInjectionExpression,
     replaceRequireDeclarationWithImport,
     replaceRequireStatementWithImport,
+    replaceRequireReassignmentsWithImports,
     replaceCommonExportsWithESM,
     createModuleExportsResultCheck,
     getUniqueIdentifier,
@@ -72,6 +73,7 @@ export default ({ types: t, template }) => {
 
     if (t.isProgram(parent) && t.isAssignmentExpression(expression)) {
       replaceCommonExportsWithESM(path)
+      replaceRequireReassignmentsWithImports(path)
     }
 
     if (!t.isCallExpression(expression)) return

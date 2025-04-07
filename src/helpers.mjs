@@ -57,7 +57,6 @@ export default ({ types: t, template }) => {
       )
     )
 
-
     return result
   }
 
@@ -125,33 +124,26 @@ export default ({ types: t, template }) => {
       })
     )
 
-
     return result
   }
 
   const isModuleOrExportsInDependencyList = (dependencyList) => {
-    return (
-      dependencyList &&
-      dependencyList.elements.some(
-        (element) =>
-          t.isStringLiteral(element) && (element.value === MODULE || element.value === EXPORTS)
-      )
+    return dependencyList?.elements.some(
+      (element) =>
+        t.isStringLiteral(element) && [MODULE, EXPORTS].includes(element.value)
     )
   }
 
   // https://github.com/requirejs/requirejs/wiki/differences-between-the-simplified-commonjs-wrapper-and-standard-amd-define
   const isSimplifiedCommonJSWrapper = (dependencyList, factoryArity) => {
-
     return !dependencyList && factoryArity > 0
   }
 
   const isSimplifiedCommonJSWrapperWithModuleOrExports = (dependencyList, factoryArity) => {
-
     return isSimplifiedCommonJSWrapper(dependencyList, factoryArity) && factoryArity > 1
   }
 
   const isModuleOrExportsInjected = (dependencyList, factoryArity) => {
-
     return (
       isModuleOrExportsInDependencyList(dependencyList) ||
       isSimplifiedCommonJSWrapperWithModuleOrExports(dependencyList, factoryArity)
@@ -159,19 +151,15 @@ export default ({ types: t, template }) => {
   }
 
   const getUniqueIdentifier = (scope, name) => {
-
     return scope.hasOwnBinding(name) ? scope.generateUidIdentifier(name) : t.identifier(name)
   }
 
   const isFunctionExpression = (factory) => {
-
     return t.isFunctionExpression(factory) || t.isArrowFunctionExpression(factory)
   }
 
   const createFactoryReplacementExpression = (factory, dependencyInjections) => {
-
     if (t.isFunctionExpression(factory)) {
-
       return t.functionExpression(
         null,
         [],
@@ -190,7 +178,6 @@ export default ({ types: t, template }) => {
       [],
       t.blockStatement(dependencyInjections.concat(bodyStatement))
     )
-
 
     return result
   }
@@ -406,7 +393,6 @@ export default ({ types: t, template }) => {
     depsIdentifier,
     isDefineCall,
   }) => {
-
     const factoryInvocation = t.callExpression(
       t.memberExpression(factoryIdentifier, t.identifier('apply')),
       [
@@ -515,7 +501,7 @@ export default ({ types: t, template }) => {
       }
     }
 
-    return []
+    return [node, chain]
   }
 
   const constructImportDeclaration = (path, specifier) => {
@@ -569,7 +555,6 @@ export default ({ types: t, template }) => {
     return template`${chainExpression}`()
   }
 
-
   const createImportWithDestructuring = (left, right, chain = []) => {
     const path = right.arguments[0].value
     const name = PREFIX + (t.isObjectPattern(left) ? createVariableFromPath(path) : left.name)
@@ -581,33 +566,43 @@ export default ({ types: t, template }) => {
           left,
           reconstructMemberExpression(name, chain).expression,
         ),
-      ])
+      ]),
     ]
   }
 
   const replaceRequireDeclarationWithImport = (node) => {
-    if (node.declarations.length === 1) {
-      const declaration = node.declarations[0]
-
-      if (t.isCallExpression(declaration.init) && t.isIdentifier(declaration.init.callee) && declaration.init.callee.name === REQUIRE) {
-        if (t.isObjectPattern(declaration.id) && !declaration.id.properties.some(prop => prop.key.name === DEFAULT) && !isExternalPath(declaration.init.arguments[0].value)) {
-          return createImportWithDestructuring(declaration.id, declaration.init)
-        }
-
-        return constructImportDeclaration(declaration.init.arguments[0].value, declaration.id)
-      }
-
-      if (t.isCallExpression(declaration.init) || t.isMemberExpression(declaration.init)) {
-        const [firstNode, chain] = getChainWithExpressionNode(declaration.init)
-
-        if (firstNode?.callee.name === REQUIRE) {
-          if (chain.length === 1 && t.isMemberExpression(chain[0]) && chain[0].property.name === DEFAULT) {
-            return constructImportDeclaration(firstNode.arguments[0].value, declaration.id)
+    if (node.declarations.length > 0) {
+      const replacements = []
+      for (const declaration of node.declarations) {
+        if (
+          t.isCallExpression(declaration.init)
+          && t.isIdentifier(declaration.init.callee)
+          && declaration.init.callee.name === REQUIRE
+        ) {
+          if (
+            t.isObjectPattern(declaration.id)
+            && !declaration.id.properties.some(prop => prop.key.name === DEFAULT)
+            && !isExternalPath(declaration.init.arguments[0].value)
+          ) {
+            replacements.push(createImportWithDestructuring(declaration.id, declaration.init))
+          } else {
+            replacements.push(constructImportDeclaration(declaration.init.arguments[0].value, declaration.id))
           }
+        } else if (t.isCallExpression(declaration.init) || t.isMemberExpression(declaration.init)) {
+          const [firstNode, chain] = getChainWithExpressionNode(declaration.init)
 
-          return createImportWithDestructuring(declaration.id, firstNode, chain)
+          if (firstNode?.callee?.name === REQUIRE) {
+            if (chain.length === 1 && t.isMemberExpression(chain[0]) && chain[0].property.name === DEFAULT) {
+              replacements.push(constructImportDeclaration(firstNode.arguments[0].value, declaration.id))
+            } else {
+              replacements.push(createImportWithDestructuring(declaration.id, firstNode, chain))
+            }
+          }
         }
       }
+
+      const flatted = replacements.flat()
+      if (flatted.length) { return flatted }
     }
 
     // do nothing
@@ -625,13 +620,24 @@ export default ({ types: t, template }) => {
       if (t.isMemberExpression(expression.callee)) {
         const [node, chain] = getChainWithExpressionNode(expression)
 
-        if (node?.callee.name === REQUIRE) {
+        if (node?.callee?.name === REQUIRE) {
           const path = node.arguments[0].value
           const name = PREFIX + createVariableFromPath(path)
 
           return [
             constructImportDeclaration(path, t.identifier(name)),
             reconstructMemberExpression(name, chain),
+          ]
+        }
+      }
+
+      if (t.isCallExpression(expression.callee)) {
+        if (t.isIdentifier(expression.callee.callee) && expression.callee.callee.name === REQUIRE) {
+          const path = expression.callee.arguments[0]?.value
+          const name = PREFIX + createVariableFromPath(path)
+          return [
+            constructImportDeclaration(path, t.identifier(name)),
+            t.expressionStatement(t.callExpression(t.identifier(name), expression.arguments)),
           ]
         }
       }
@@ -643,6 +649,40 @@ export default ({ types: t, template }) => {
 
   const createNamedExport = (identifier, declaration) => {
     return t.exportNamedDeclaration(t.variableDeclaration('const', [t.variableDeclarator(identifier, declaration)]), [])
+  }
+
+  const replaceRequireReassignmentsWithImports = path => {
+    const { node } = path
+
+    if (!t.isExpressionStatement(node)) { return }
+
+    const { expression } = node
+    const { left, right } = expression
+
+    if (t.isCallExpression(right) && right.callee?.name === REQUIRE) {
+      if (t.isIdentifier(left)) {
+        return path.replaceWith(
+          constructImportDeclaration(
+            right.arguments[0]?.value,
+            t.identifier(left.name)
+          )
+        )
+      }
+
+      if (t.isMemberExpression(left)) {
+        const name = PREFIX + createVariableFromPath(right.arguments[0]?.value)
+
+        return path.replaceWithMultiple([
+          constructImportDeclaration(
+            right.arguments[0]?.value,
+            t.identifier(name)
+          ),
+          t.expressionStatement(
+            t.assignmentExpression('=', left, t.identifier(name))
+          ),
+        ])
+      }
+    }
   }
 
   const replaceCommonExportsWithESM = (path) => {
@@ -687,6 +727,7 @@ export default ({ types: t, template }) => {
     createFactoryInvocationWithUnknownArgTypes,
     replaceRequireDeclarationWithImport,
     replaceRequireStatementWithImport,
+    replaceRequireReassignmentsWithImports,
     replaceCommonExportsWithESM,
   }
 }
